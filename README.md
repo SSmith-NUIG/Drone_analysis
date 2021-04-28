@@ -234,7 +234,7 @@ gatk BaseRecalibrator \
 -I "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".nobqsr.grpd.bam \
 -R /data/ssmith/c_l_genome/apis_c_l_genome.fa \
 --known-sites $featureFile \
--O /data/ssmith/c_l_genome/recal_data.table \
+-O /data/ssmith/c_l_genome/S"$SLURM_ARRAY_TASK_ID".recal_data.table \
 --bqsr-baq-gap-open-penalty 30.0
 ```
 
@@ -243,7 +243,7 @@ BASE RECALIBRATOR APPLY BQSR
 gatk ApplyBQSR \
 -R /data/ssmith/c_l_genome/apis_c_l_genome.fa \
 -I "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".nobqsr.grpd.bam \
---bqsr-recal-file /data/ssmith/c_l_genome/recal_data.table \
+--bqsr-recal-file /data/ssmith/c_l_genome/S"$SLURM_ARRAY_TASK_ID".recal_data.table \
 -O "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".grpd.bam
 ```
 
