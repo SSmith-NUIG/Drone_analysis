@@ -200,3 +200,86 @@ Use Samtools index to index the sorted bams
 ```bash
 samtools index "$sortedPath"/A_"$SLURM_ARRAY_TASK_ID".sorted.dupM.bam
 ```
+
+Samtools to view number of alignments:
+```bash
+samtools view "$sortedPath"/dupMarked/S"$SLURM_ARRAY_TASK_ID".sorted.dupM.bam \
+| wc -l > "$sortedPath"/dupNumAln/S"$SLURM_ARRAY_TASK_ID"_num_alignments.txt
+```
+SAMTOOLS VIEW HEADER INFO
+```bash
+samtools view -H "$sortedPath"/dupMarked/S"$SLURM_ARRAY_TASK_ID".sorted.dupM.bam \
+> "$sortedPath"/dupHeaders/S"$SLURM_ARRAY_TASK_ID"_header_info.txt
+ ```
+PICARD ADD OR REPLACE GROUPS
+
+```bash
+picard AddOrReplaceReadGroups \
+I="$sortedPath"/dupMarked/S"$SLURM_ARRAY_TASK_ID".sorted.dupM.bam \
+O="$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".nobqsr.grpd.bam \
+RGID=4 \
+RGLB=lib1 \
+RGPL=ILLUMINA \
+RGPU=unit1 \
+RGSM=S"$SLURM_ARRAY_TASK_ID"
+```
+
+```bash
+rm "$sortedPath"/dupMarked/S"$SLURM_ARRAY_TASK_ID".sorted.dupM.bam
+```
+
+BASE RECALIBRATOR
+```bash
+gatk BaseRecalibrator \
+-I "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".nobqsr.grpd.bam \
+-R /data/ssmith/c_l_genome/apis_c_l_genome.fa \
+--known-sites $featureFile \
+-O /data/ssmith/c_l_genome/recal_data.table \
+--bqsr-baq-gap-open-penalty 30.0
+```
+
+BASE RECALIBRATOR APPLY BQSR
+```bash
+gatk ApplyBQSR \
+-R /data/ssmith/c_l_genome/apis_c_l_genome.fa \
+-I "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".nobqsr.grpd.bam \
+--bqsr-recal-file /data/ssmith/c_l_genome/recal_data.table \
+-O "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".grpd.bam
+```
+
+```bash
+rm "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".nobqsr.grpd.bam
+```
+
+
+QUALIMAP
+```bash
+qualimap bamqc \
+-bam "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".grpd.bam \
+-sd -os -c -oc "$dirPath"/quali/S"$SLURM_ARRAY_TASK_ID"/S"$SLURM_ARRAY_TASK_ID".txt \
+-gff /data/ssmith/c_l_genome/cl.gtf \
+-outdir "$dirPath"/quali/S"$SLURM_ARRAY_TASK_ID"/ \
+-outformat HTML -outfile S"$SLURM_ARRAY_TASK_ID".html 
+```
+
+SAMTOOLS INDEX
+```bash
+samtools index "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".grpd.bam
+```
+
+HAPLOTYPECALLER
+
+```bash
+gatk HaplotypeCaller \
+-I "$clumPath"/c_l_dupMarkedGrouped/S"$SLURM_ARRAY_TASK_ID".grpd.bam \
+-R /data/ssmith/gatk_ref/apis_c_l_genome.fa \
+-ERC GVCF \
+-O /data/ssmith/drone_data/cldata/GATK_c_l_output/S"$SLURM_ARRAY_TASK_ID".g.vcf
+```
+
+SNPEFF
+```bash
+snpEff ann apiscl /data/ssmith/drone_data/cldata/GATK_c_l_output/S"$SLURM_ARRAY_TASK_ID".g.vcf \
+-s /data/ssmith/drone_data/cldata/annotation_results/S"$SLURM_ARRAY_TASK_ID"_summary.html \
+> /data/ssmith/drone_data/cldata/annotation_results/S"$SLURM_ARRAY_TASK_ID".vcf
+```
